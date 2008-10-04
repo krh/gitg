@@ -138,7 +138,18 @@ lane_container_new(gchar const *hash)
 	return ret;
 }
 
-GSList *
+static InactiveContainer *
+inactive_container_new(GitgLane *lane, gint8 index)
+{
+	InactiveContainer *ret = g_new(InactiveContainer, 1);
+	
+	ret->color = gitg_color_ref(lane->color);
+	ret->index = index;
+	
+	return ret;
+}
+
+static GSList *
 lanes_list(GitgLanes *lanes)
 {
 	GSList *lns = NULL;
@@ -277,6 +288,7 @@ purge_lanes(GitgLanes *lanes)
 	GSList *item;
 	LaneContainer *container;
 	gint8 index = 0;
+	gint8 cnt = 0;
 
 	/* check every lane to see if it needs to be purged */
 	copy = g_slist_copy(lanes->priv->lanes);
@@ -288,12 +300,16 @@ purge_lanes(GitgLanes *lanes)
 		{
 			purge_inactive_lane(lanes, container, index);
 			lanes->priv->lanes = g_slist_remove(lanes->priv->lanes, container);
+			
+			g_hash_table_insert(lanes->priv->inactive, (gpointer)container->hash, inactive_container_new(container->lane, cnt));
 			lane_container_free(container);
 		}
 		else
 		{
 			++index;
 		}
+		
+		++cnt;
 	}
 	
 	g_slist_free(copy);
